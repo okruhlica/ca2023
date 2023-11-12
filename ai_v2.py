@@ -45,9 +45,9 @@ class StatisticalGuesser:
 
 
     def send_shot(self, y, x):
-        is_hit = self.ask_fn(y, x)
+        response = self.ask_fn(y, x)
+        is_hit = response.cell == 'X'
         self.mark_shot(y, x, is_hit)
-        # print('Asking ', (y, x), f"(hits {self.hits})")
 
     def analyze(self):
         analyze_board = StatsBoard(self.rows, self.cols)
@@ -59,9 +59,7 @@ class StatisticalGuesser:
                         if self.hit_board.can_place(y, x, shape_copy, check_proximity=False):
                             analyze_board.place(y, x, shape_copy)
 
-        # Find most likely square to guess
-        # print("Analysis board:")
-        # analyze_board.print()
+
         indices = np.where(analyze_board.board == analyze_board.board.max())
         ymax, xmax = next(zip(indices[0], indices[1]))
 

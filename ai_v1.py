@@ -3,6 +3,7 @@ from random import shuffle
 
 class RandomGuesser:
     NAME = "Random Guesser"
+
     def __init__(self, ask_fn, gamedef):
         self.ask_fn = ask_fn
 
@@ -24,7 +25,7 @@ class RandomGuesser:
             return False
 
         y, x = self.moves.pop()
-        result = self.ask_fn(y, x)
-        if result:
+        response = self.ask_fn(y, x)
+        if response.cell == 'X':
             self.hits += 1
         return True

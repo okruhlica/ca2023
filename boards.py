@@ -27,7 +27,7 @@ class Board:
         #     return False
 
         test_mx = np.multiply(self.board[y:y + sh_y, x:x + sh_x], ship)
-        if test_mx.min() != 0 or test_mx.max() !=0:
+        if test_mx.min() != 0 or test_mx.max() != 0:
             # print('Collision')
             return False
 
@@ -42,10 +42,10 @@ class Board:
         if y == 0:
             ship_area = ship_area[1:, :]
             by += 1
-        if x+sh_x + 2 >= self.cols:
+        if x + sh_x + 2 >= self.cols:
             ship_area = ship_area[:, :-1]
 
-        if y+sh_y + 2 >= self.rows:
+        if y + sh_y + 2 >= self.rows:
             ship_area = ship_area[:-1, :]
 
         test_mx = np.multiply(self.board[by:by + ship_area.shape[0], bx:bx + ship_area.shape[1]], ship_area)
@@ -71,14 +71,16 @@ class Board:
         np.set_printoptions(precision=0)
         print(self.board)
 
+
 class HitBoard(Board):
 
-    def can_place(self,y,x,ship):
+    def can_place(self, y, x, ship):
         b = self.board.copy()
         self.board[self.board < 0] = 0
-        res = Board.can_place(self,y,x,ship)
-        self.board=b
+        res = Board.can_place(self, y, x, ship)
+        self.board = b
         return res
+
 
 class StatsBoard(Board):
 
@@ -89,16 +91,28 @@ class StatsBoard(Board):
         self.board[y:y + sh_y, x:x + sh_x] += ship[1:-1, 1:-1]
         return True
 
+
 def generate_random_board(gamedef):
     b = Board(gamedef.rows, gamedef.cols)
+    regenerate = False
+
     for ship in gamedef.fleet:
         name = ship['name']
         count = 1
+        its = 0
         while count > 0:
+            its+=1
             rx, ry = randint(0, b.cols - 1), randint(0, b.rows - 1)
             shipdef = choice(ship['shapes'])
             success = b.try_place(ry, rx, shipdef)
             if success:
                 # print(f'Placed {name} at [{rx},{ry}].')
                 count -= 1
+            if its > gamedef.cols*gamedef.rows:
+                regenerate = True
+                break
+        if regenerate:
+            break
+    if regenerate:
+        return generate_random_board(gamedef)
     return b
