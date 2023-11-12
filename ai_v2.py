@@ -1,7 +1,6 @@
 import numpy as np
 
 from boards import Board, StatsBoard
-from game_def import SHIPS
 
 
 class StatisticalGuesser:
@@ -10,19 +9,19 @@ class StatisticalGuesser:
     MISS = -1.
     UNKNOWN = 0.
 
-    def __init__(self, ask_fn, ships=SHIPS, rows=12, cols=12):
-        self.rows = rows
-        self.cols = cols
+    def __init__(self, ask_fn, gamedef):
+        self.rows = gamedef.rows
+        self.cols = gamedef.cols
+        self.ships = gamedef.fleet
 
         self.ask_fn = ask_fn
-        # self.guess_board = Board(rows, cols)
-
-        self.queued_shots = set()
-        self.ships = ships
 
         self.shots = []
+        self.queued_shots = set()
+
+        self.needed = gamedef.hits_needed
         self.hits = 0
-        self.hit_board = Board(rows, cols)
+        self.hit_board = Board(self.rows, self.cols)
 
     def unknown_neighbors(self, y, x):
         s = set()

@@ -3,12 +3,19 @@ from random import shuffle
 
 class RandomGuesser:
     NAME = "Random Guesser"
-    def __init__(self, ask_fn):
-        self.hits = 0
+    def __init__(self, ask_fn, gamedef):
         self.ask_fn = ask_fn
+
+        self.fleet = gamedef.fleet
+        self.rows = gamedef.rows
+        self.cols = gamedef.cols
+
+        self.hits = 0
+        self.needed = gamedef.hits_needed
         self.moves = []
-        for y in range(12):
-            for x in range(12):
+
+        for y in range(self.rows):
+            for x in range(self.cols):
                 self.moves.append((y, x))
         shuffle(self.moves)
 

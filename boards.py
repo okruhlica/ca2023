@@ -1,11 +1,6 @@
 from random import randint, choice
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 
 import numpy as np
-from numpy import uint8
-
-from game_def import SHIPS, SHIP_COUNTS
 
 
 class Board:
@@ -94,11 +89,11 @@ class StatsBoard(Board):
         self.board[y:y + sh_y, x:x + sh_x] += ship[1:-1, 1:-1]
         return True
 
-def generate_random_board(y, x):
-    b = Board(y, x)
-    for ship in SHIPS:
+def generate_random_board(gamedef):
+    b = Board(gamedef.rows, gamedef.cols)
+    for ship in gamedef.fleet:
         name = ship['name']
-        count = SHIP_COUNTS[name]
+        count = 1
         while count > 0:
             rx, ry = randint(0, b.cols - 1), randint(0, b.rows - 1)
             shipdef = choice(ship['shapes'])

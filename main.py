@@ -6,8 +6,8 @@ from boards import generate_random_board
 
 
 class Captain:
-    def __init__(self):
-        self.board = generate_random_board(12, 12)
+    def __init__(self, gamedef):
+        self.board = generate_random_board(gamedef)
         self.board.board[self.board.board < 1] = 0
         self.hits = np.zeros((12, 12))
 
@@ -24,12 +24,13 @@ class Captain:
         self.board.print()
 
 
-def play_random_games(opponent, count=40):
+def play_random_games(opponent, gamedef, iterations=40):
     sum_turns = 0.0
-    for game in range(count):
+    for game in range(iterations):
+        print(f"Game #{game}")
         turns = 0
-        p0 = Captain()
-        p1 = opponent(p0.ask)
+        p0 = Captain(gamedef)
+        p1 = opponent(p0.ask, gamedef)
 
         while not p0.finished():
             # print(f"Turn #{turns}")
@@ -37,7 +38,7 @@ def play_random_games(opponent, count=40):
             if not p1.move():
                 break
 
-        if p1.hits != 9:
+        if p1.hits != gamedef.hits_needed:
             print(f"!ASSERTION ERROR! ({p1.hits}/9 hits)")
             print("Game:")
             p0.print_board()
@@ -45,13 +46,14 @@ def play_random_games(opponent, count=40):
             p1.print_board()
             return
         sum_turns += turns
-    return sum_turns / count
+    return sum_turns / iterations
 
 
 if __name__ == '__main__':
-    # while True:
-    avg_dummy = play_random_games(ai_v1.RandomGuesser, 1000)
+    from game_def import CA2023_GAME_DEF
+
+    avg_dummy = play_random_games(ai_v1.RandomGuesser, CA2023_GAME_DEF, iterations=10)
     print(f"Average turns ({ai_v1.RandomGuesser.NAME}): {avg_dummy}")
 
-    avg_stat = play_random_games(ai_v2.StatisticalGuesser, 1000)
+    avg_stat = play_random_games(ai_v2.StatisticalGuesser, CA2023_GAME_DEF, iterations=10)
     print(f"Average turns ({ai_v2.StatisticalGuesser.NAME}): {avg_stat}")
