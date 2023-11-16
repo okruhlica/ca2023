@@ -1,32 +1,45 @@
-from utils import parse_ship
-
-
 class GameDef:
     def __init__(self, rows, cols, ships):
         self.rows = rows
         self.cols = cols
         self.fleet = ships
-        self.hits_needed = sum([(ship['shapes'][0]==1).sum() for ship in ships])
 
 
 _CA23_GAME_SHIPS = [
-    {'name': 'Destroyer',
-     'shapes': parse_ship(['11', '1|1'])
+    {'name': 'Patrol Boat',
+     'variants': ['11', '1|1'],
+     'size': 2,
+     'part_of': ['Submarine', 'Cruiser', 'Battleship', 'Carrier', 'Avengers Helicarrier'],
+     '_order': 5
      },
     {'name': 'Submarine',
-     'shapes': parse_ship(['111', '1|1|1'])
+     'variants': ['111', '1|1|1'],
+     'size': 3,
+     'part_of': ['Battleship', 'Carrier', 'Avengers Helicarrier'],
+     '_order': 4
      },
-    {'name': 'Cruiser',
-     'shapes': parse_ship(['111', '1|1|1'])
+    {'name': 'Destroyer',
+     'variants': ['111', '1|1|1'],
+     'size': 3,
+     '_order': 3
      },
     {'name': 'Battleship',
-     'shapes': parse_ship(['1111', '1|1|1|1'])
+     'variants': ['1111', '1|1|1|1'],
+     'size': 4,
+     'part_of': ['Carrier', 'Avengers Helicarrier'],
+     '_order': 2
      },
     {'name': 'Carrier',
-     'shapes': parse_ship(['11111', '1|1|1|1|1'])
+     'variants': ['11111', '1|1|1|1|1'],
+     'size': 5,
+     'part_of': ['Avengers Helicarrier'],
+     '_order': 1
      },
     {'name': 'Avengers Helicarrier',
-     'shapes': parse_ship(['01010|11111|01010', '010|111|010|111|010'])
+     'variants': ['01010|11111|01010', '010|111|010|111|010'],
+     'size': 9,
+     'part_of': [],
+     '_order': 0
      },
 ]
 

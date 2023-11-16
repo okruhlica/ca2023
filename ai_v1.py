@@ -12,7 +12,7 @@ class RandomGuesser:
         self.cols = gamedef.cols
 
         self.hits = 0
-        self.needed = gamedef.hits_needed
+        # self.needed = gamedef.hits_needed
         self.moves = []
 
         for y in range(self.rows):
