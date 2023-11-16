@@ -10,9 +10,7 @@ from ship import ShipShapeType
 
 def generate_random_board(gamedef):
     b = ZeroOneBoard(gamedef.rows, gamedef.cols)
-    # regenerate = False
-    fleet = Fleet()
-    fleet.from_list(gamedef.fleet)
+    fleet = gamedef.fleet
     random.shuffle(fleet.ships)
 
     regenerate = False
@@ -37,10 +35,14 @@ def generate_random_board(gamedef):
 
 
 if __name__ == '__main__':
-    samples = 100
+    samples = 500
     fs_path = 'data/boards/'
+
+    checksum_pieces = CA2023_GAME_DEF.fleet.hits_needed()
 
     for iteration in range(samples):
         board = generate_random_board(CA2023_GAME_DEF)
+        assert board.ones() == checksum_pieces
+
         with open(os.path.join(fs_path, str(iteration) + '.board'), "w") as text_file:
             text_file.write(str(board))

@@ -119,6 +119,11 @@ class ZeroOneBoard:
         self.rows, self.cols = rows, cols
         self.board = np.zeros((rows, cols))
 
+    def copy(self):
+        other = ZeroOneBoard(self.rows, self.cols)
+        other.board = self.board.copy()
+        return other
+
     def reset(self):
         self.board[:, :] = 0
 
@@ -144,7 +149,7 @@ class ZeroOneBoard:
             return False
 
         shape_h, shape_w = _get_shape_2d(shape)
-        self.board[y:y + shape_h, x:x + shape_w] = shape
+        self.board[y:y + shape_h, x:x + shape_w] += shape
         return True
 
     def from_str(self, s, line_delim=os.linesep):
@@ -172,16 +177,20 @@ class ZeroOneBoard:
     def ones(self):
         return self.board.sum()
 
-# class GameBoard:
-#     def __init__(self, h, w):
-#         self.ships = ZeroOneBoard(h, w)
-#         self.unavailables = ZeroOneBoard(h, w)
-#
-#     def can_place(self, y, x, ship):
-#         shape = ship.protected_shape
-#         if self.unavailables.can_place(y,x, ship.protected_shape)
-#
-# class GuessBoard:
-#     def __init__(self,h, w):
-#         self.hits = ZeroOneBoard(h, w)
-#         self.misses = ZeroOneBoard(h, w)
+class CountBoard:
+    def __init__(self, rows, cols):
+        self.rows, self.cols = rows, cols
+        self.board = np.zeros((rows, cols))
+
+    def place(self, y, x, obj):
+        sh_h, sh_w = obj.shape
+        self.board[y:y+sh_h, x:x+sh_w]+=obj
+
+    def max(self):
+        return self.board.max()
+    def max_index(self):
+        indices = np.where(self.board == self.max())
+        ymax, xmax = next(zip(indices[0], indices[1]))
+        return ymax, xmax
+    def reset(self):
+        self.board = np.zeros((self.rows, self.cols))

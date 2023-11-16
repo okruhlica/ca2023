@@ -1,8 +1,12 @@
+from fleet import Fleet
+
+
 class GameDef:
     def __init__(self, rows, cols, ships):
         self.rows = rows
         self.cols = cols
-        self.fleet = ships
+        self.fleet = Fleet()
+        self.fleet.from_list(ships)
 
 
 _CA23_GAME_SHIPS = [

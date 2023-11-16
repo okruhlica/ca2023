@@ -1,40 +1,40 @@
 import os
+import time
 from random import choice, shuffle
 
 import ai_v1
+import ai_v2
 import game_def
 from boards import ZeroOneBoard
 from opponent import MockOpponent
-def play_random_games(engine, opponent, gamedef, iterations=20):
-    sum_turns = 0.0
-    for game in range(iterations):
-        print(f"Game #{game}")
-        turns = 0
-        p0 = engine(gamedef)
-        p1 = opponent(p0.fire, gamedef)
 
-        while not p0.finished():
-            turns += 1.0
-            if not p1.move():
-                break
-
-        if p1.hits != gamedef.hits_needed:
-            print(f"!ASSERTION ERROR! ({p1.hits}/9 hits)")
-            print("Game:")
-            p0.print_board()
-            print("Guessboard:")
-            p1.print_board()
-            return
-        sum_turns += turns
-    return sum_turns #/ iterations
 
 def load_local_board(path, id):
-    uri = os.path.join(path, str(id)+'.board')
-    board = ZeroOneBoard(0,0)
+    uri = os.path.join(path, str(id) + '.board')
+    board = ZeroOneBoard(0, 0)
     board.from_str(open(uri, 'r').read().strip())
     return board
 
-def play_game(op, bot):
+
+def play_games(maps, bot_cls, count):
+    total_turns = 0.
+    start = time.time()
+
+    for it in range(count):
+        opponent = MockOpponent(maps[it].copy())
+        assert (maps[it].ones() == 26)
+        bot = bot_cls(opponent.fire_at, gamedef)
+        total_turns += play_single_game(opponent, bot)
+
+    end = time.time()
+    duration = round((end - start) * 1000)
+
+    print(
+        f"{bot_cls.__name__} player {iterations} games and needed {total_turns / iterations} turns on average to finish a game. That's a score of approx. {round(200*(total_turns / iterations))} pts.")
+    print(f"Games took {duration}ms ({duration / iterations}ms on average per game)\n")
+
+
+def play_single_game(op, bot):
     turns = 0.
     while not op.finished():
         turns += 1.
@@ -42,30 +42,19 @@ def play_game(op, bot):
             print('Bot has given up :(')
             turns = 10000000
             break
-
-    # if p1.hits != gamedef.hits_needed:
-    #     print(f"!ASSERTION ERROR! ({p1.hits}/9 hits)")
-    #     print("Game:")
-    #     p0.print_board()
-    #     print("Guessboard:")
-    #     p1.print_board()
-    #     return
     return turns
 
 
 if __name__ == '__main__':
-    iterations = 20
+    iterations = 100
     gamedef = game_def.CA2023_GAME_DEF
-    bot_cls = ai_v1.RandomGuesser
+    bots = [ai_v1.RandomGuesser, ai_v2.StatisticalGuesser]
 
-    ids = [i for i in range(100)]
-    shuffle(ids)
-    boards = [load_local_board('data/boards/', num) for num in ids]
+    # Init maps
+    MAPS_AVAILABLE = 500
+    map_ids = [i for i in range(MAPS_AVAILABLE)]
+    # shuffle(map_ids)
+    selected_maps = [load_local_board('data/boards/', num) for num in map_ids]
 
-    total_turns = 0.
-    for it in range(iterations):
-        opponent = MockOpponent(boards[it])
-        bot = bot_cls(opponent.fire_at, gamedef)
-        total_turns+= play_game(opponent, bot)
-
-    print(f"{iterations} games played, average score was {total_turns/iterations}")
+    for bot in bots:
+        play_games(selected_maps.copy(), bot, iterations)
