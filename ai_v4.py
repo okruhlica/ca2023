@@ -40,13 +40,13 @@ class StatisticalGuesserHunt:
             return None, None
         return None, None
 
-    def enqueue_neighbors(self, y, x, priority=10):
-        s = set()
-        for (yy, xx) in [(y-1,x), (y+1,x), (y, x-1), (y, x+1)]:
-                if 0 <= yy < self.rows and \
-                    0 <= xx < self.cols and \
-                        not self.shot_board.is_one(yy, xx):
-                    self.enqueue_one(yy, xx, priority)
+    # def enqueue_neighbors(self, y, x, priority=10):
+    #     s = set()
+    #     for (yy, xx) in [(y-1,x), (y+1,x), (y, x-1), (y, x+1)]:
+    #             if 0 <= yy < self.rows and \
+    #                 0 <= xx < self.cols and \
+    #                     not self.shot_board.is_one(yy, xx):
+    #                 self.enqueue_one(yy, xx, priority)
 
     def analyze(self):
         count_board = CountBoard(self.rows, self.cols)
@@ -89,12 +89,130 @@ class StatisticalGuesserHunt:
         if response.cell == 'X':
             self.hits += 1
             self.hit_board.set_cell(y, x, 1)
-            self.enqueue_neighbors(y, x, 10)
+            # self.enqueue_neighbors(y, x, 10)
         elif response.cell == '.':
             self.miss_board.set_cell(y, x, 1)
 
+
+    def find_lines(self):
+        def try_set_miss(y,x):
+            if 0 <= y < self.rows:
+                if 0 <= x < self.cols:
+                    self.miss_board.set_cell(y,x,1)
+
+        def is_miss(y,x):
+            if 0 <= y < self.rows:
+                if 0 <= x < self.cols:
+                    return self.miss_board.is_one(y, x)
+            return False
+
+        def is_hit(y,x):
+            if 0 <= y < self.rows:
+                if 0 <= x < self.cols:
+                    return self.hit_board.is_one(y, x)
+            return False
+        def try_expand(fromy,fromx, horizontal=True, reverse = False):
+            dx = 1 if horizontal else 0
+            dy = 1 - dx
+            if reverse:
+                dx, dy = -dx, -dy
+
+            yy, xx = fromy+dy,fromx+dx
+            nexty, nextx = None, None
+            steps = 0
+            continues = 0
+            can_expand = False
+
+            while 0 <= xx < self.cols and 0 <= yy < self.rows and not self.miss_board.is_one(yy, xx):
+                if self.hit_board.is_one(yy, xx):
+                    continues+=1
+                elif nextx is None:
+                    can_expand = True
+                    nexty, nextx = yy, xx
+                steps+=1
+                yy+=dy
+                xx+=dx
+            return can_expand, (continues, steps, nexty, nextx)
+
+        lines = []
+        used = np.zeros((self.rows, self.cols))
+        for y in range(self.rows):
+            for x in range(self.cols):
+                if used[y, x]:
+                    continue
+
+                if self.hit_board.is_one(y,x):
+                    expands, res1 = try_expand(y, x, horizontal=True)
+                    if res1[0] == 4: # Avenger carrier or 5
+                        try_set_miss(y, x - 1)
+                        try_set_miss(y, x + 5)
+
+                        try_set_miss(y - 1, x - 1)
+                        try_set_miss(y - 1, x)
+                        try_set_miss(y - 1, x + 2)
+                        try_set_miss(y - 1, x + 4)
+                        try_set_miss(y - 1, x + 5)
+
+                        try_set_miss(y + 1, x - 1)
+                        try_set_miss(y + 1, x)
+                        try_set_miss(y + 1, x + 2)
+                        try_set_miss(y + 1, x + 4)
+                        try_set_miss(y + 1, x + 5)
+
+                        av = [(y-1,x+1),(y-1,x+3),(y+1,x+1),(y+1,x+3)]
+                        for ty, tx in av:
+                            if is_miss(ty,tx):
+                                for tty, ttx in av:
+                                    try_set_miss(tty, ttx)
+                            if is_hit(ty, tx):
+                                pass #todo
+
+
+                    expands, res2 = try_expand(y, x, horizontal=False)
+                    if res2[0] == 4: # Avenger carrier or 5
+                        try_set_miss(y - 1, x)
+                        try_set_miss(y + 5, x)
+
+                        try_set_miss(y - 1, x - 1)
+                        try_set_miss(y, x - 1)
+                        try_set_miss(y, x + 1)
+
+                        try_set_miss(y + 2, x - 1)
+                        try_set_miss(y + 2, x + 1)
+
+                        try_set_miss(y + 4, x - 1)
+                        try_set_miss(y + 4, x + 1)
+
+                        try_set_miss(y + 5, x - 1)
+                        try_set_miss(y + 5, x + 1)
+
+                        av = [(y + 1, x - 1), (y + 3, x - 1), (y + 1, x + 1), (y + 3, x + 1)]
+                        for ty, tx in av:
+                            if is_miss(ty, tx):
+                                for tty, ttx in av:
+                                    try_set_miss(tty, ttx)
+                            if is_hit(ty, tx):
+                                pass  # todo
+
+                    lines.append(res1)
+                    lines.append(res2)
+                    expands, res = try_expand(y, x, horizontal=True, reverse=True)
+                    if expands:
+                        lines.append(res)
+                    expands, res = try_expand(y, x, horizontal=False, reverse=True)
+                    if expands:
+                        lines.append(res)
+
+        lines.sort(reverse=True)
+        while len(lines):
+            c, l, y, x = lines.pop()
+            if c < 5 and y is not None and not self.shot_board.is_one(y, x) and not self.miss_board.is_one(y, x):
+                self.enqueue_one(y, x, priority=1)
+                return
+
     def move(self):
-        self.analyze_board()
+        self.find_lines()
+        # self.analyze_board()
 
         y, x = self.dequeue_new()
         if y is None or x is None:
