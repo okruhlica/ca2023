@@ -48,9 +48,16 @@ class StatisticalGuesserHunt:
     #                     not self.shot_board.is_one(yy, xx):
     #                 self.enqueue_one(yy, xx, priority)
 
+    def avenger_sunk(self):
+        return 9 in self.sunk_ships
+
     def analyze(self):
         count_board = CountBoard(self.rows, self.cols)
         for ship in self.fleet.ships:
+            pieces = ship['size']
+            if pieces > 3 and pieces in self.sunk_ships:
+                continue
+
             for ship_variant in ship['variants']:
                 ship_only = ship_variant.get_shape(ShipShapeType.SHIP_TRIMMED)
                 for y in range(0, self.rows):
@@ -93,32 +100,33 @@ class StatisticalGuesserHunt:
         elif response.cell == '.':
             self.miss_board.set_cell(y, x, 1)
 
-
     def find_lines(self):
-        def try_set_miss(y,x):
+        avenger_found = self.avenger_sunk()
+        def try_set_miss(y, x):
             if 0 <= y < self.rows:
                 if 0 <= x < self.cols:
-                    if not self.hit_board.is_one(y,x):
-                        self.miss_board.set_cell(y,x,1)
+                    if not self.hit_board.is_one(y, x):
+                        self.miss_board.set_cell(y, x, 1)
 
-        def is_miss(y,x):
+        def is_miss(y, x):
             if 0 <= y < self.rows:
                 if 0 <= x < self.cols:
                     return self.miss_board.is_one(y, x)
             return False
 
-        def is_hit(y,x):
+        def is_hit(y, x):
             if 0 <= y < self.rows:
                 if 0 <= x < self.cols:
                     return self.hit_board.is_one(y, x)
             return False
-        def try_expand(fromy,fromx, horizontal=True, reverse = False):
+
+        def try_expand(fromy, fromx, horizontal=True, reverse=False):
             dx = 1 if horizontal else 0
             dy = 1 - dx
             if reverse:
                 dx, dy = -dx, -dy
 
-            yy, xx = fromy+dy,fromx+dx
+            yy, xx = fromy + dy, fromx + dx
             nexty, nextx = None, None
             steps = 0
             continues = 0
@@ -126,13 +134,21 @@ class StatisticalGuesserHunt:
 
             while 0 <= xx < self.cols and 0 <= yy < self.rows and not self.miss_board.is_one(yy, xx):
                 if self.hit_board.is_one(yy, xx):
-                    continues+=1
+                    continues += 1
                 elif nextx is None:
                     can_expand = True
                     nexty, nextx = yy, xx
-                steps+=1
-                yy+=dy
-                xx+=dx
+
+                # if continues and avenger_found:
+                #     if dy == 0:
+                #         try_set_miss(yy-1,xx)
+                #         try_set_miss(yy + 1, xx)
+                    # else:
+                    #     try_set_miss(yy, xx - 1)
+                    #     try_set_miss(yy, xx + 1)
+                steps += 1
+                yy += dy
+                xx += dx
             return can_expand, (continues, steps, nexty, nextx)
 
         lines = []
@@ -142,9 +158,9 @@ class StatisticalGuesserHunt:
                 if used[y, x]:
                     continue
 
-                if self.hit_board.is_one(y,x):
+                if self.hit_board.is_one(y, x):
                     expands, res1 = try_expand(y, x, horizontal=True)
-                    if res1[0] == 4: # Avenger carrier or 5
+                    if res1[0] == 4:  # Avenger carrier or 5
                         try_set_miss(y, x - 1)
                         try_set_miss(y, x + 5)
 
@@ -160,24 +176,32 @@ class StatisticalGuesserHunt:
                         try_set_miss(y + 1, x + 4)
                         try_set_miss(y + 1, x + 5)
 
-                        av = [(y-1,x+1),(y-1,x+3),(y+1,x+1),(y+1,x+3)]
+                        av = [(y - 1, x + 1), (y - 1, x + 3), (y + 1, x + 1), (y + 1, x + 3)]
                         wings_hit = 0
+                        missing_wing = -1, -1
                         for ty, tx in av:
-                            if is_miss(ty,tx):
+                            if is_miss(ty, tx):
+                                self.sunk_ships.add(5)
                                 for tty, ttx in av:
                                     try_set_miss(tty, ttx)
 
                             if is_hit(ty, tx):
-                                wings_hit+=1
-                                for xxx in [-1,0,1]:
-                                    for yyy in [-1,0,1]:
-                                        try_set_miss(ty+yyy, tx+xxx)
+                                wings_hit += 1
+                                for xxx in [-1, 0, 1]:
+                                    for yyy in [-1, 0, 1]:
+                                        try_set_miss(ty + yyy, tx + xxx)
                             else:
-                                all_hit = False
+                                missing_wing = (ty, tx)
 
+                        if wings_hit > 0:
+                            if missing_wing != (-1, -1):
+                                self.enqueue_one(missing_wing[0], missing_wing[1], 0)
+                                return
+                        if wings_hit == 4:
+                            self.sunk_ships.add(9)
 
                     expands, res2 = try_expand(y, x, horizontal=False)
-                    if res2[0] == 4: # Avenger carrier or 5
+                    if res2[0] == 4:  # Avenger carrier or 5
                         try_set_miss(y - 1, x)
                         try_set_miss(y + 5, x)
 
@@ -196,16 +220,28 @@ class StatisticalGuesserHunt:
 
                         av = [(y + 1, x - 1), (y + 3, x - 1), (y + 1, x + 1), (y + 3, x + 1)]
                         wings_hit = 0
+                        missing_wing = (-1, -1)
                         for ty, tx in av:
                             if is_miss(ty, tx):
+                                self.sunk_ships.add(5)
                                 for tty, ttx in av:
                                     try_set_miss(tty, ttx)
 
+
                             if is_hit(ty, tx):
-                                wings_hit+=1
+                                wings_hit += 1
                                 for xxx in [-1, 0, 1]:
                                     for yyy in [-1, 0, 1]:
                                         try_set_miss(ty + yyy, tx + xxx)
+                            else:
+                                missing_wing = (ty, tx)
+
+                        if wings_hit > 0:
+                            if missing_wing != (-1, -1):
+                                self.enqueue_one(missing_wing[0], missing_wing[1], 0)
+                                return
+                        if wings_hit == 4:
+                            self.sunk_ships.add(9)
 
                     lines.append(res1)
                     lines.append(res2)
@@ -217,6 +253,7 @@ class StatisticalGuesserHunt:
                         lines.append(res)
 
         lines.sort(reverse=True)
+
         while len(lines):
             c, l, y, x = lines.pop()
             if c < 5 and y is not None and not self.shot_board.is_one(y, x) and not self.miss_board.is_one(y, x):
