@@ -21,7 +21,7 @@ class CheckerBoardGuesser:
         for y in range(self.rows):
             for x in range(self.cols):
                 if y % 2 != x % 2:
-                    self.enqueue_one(y, x, priority=10)
+                    self.enqueue_one(y, x, priority=11)
 
         self.hits = 0
         self.shot_board = ZeroOneBoard(self.rows, self.cols)

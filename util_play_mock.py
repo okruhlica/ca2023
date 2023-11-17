@@ -50,7 +50,7 @@ def play_single_game(op, bot):
 if __name__ == '__main__':
     iterations = 100
     gamedef = game_def.CA2023_GAME_DEF
-    bots = [ai_v3.CheckerBoardGuesser, ai_v1.RandomGuesser, ai_v2.StatisticalGuesser]
+    bots = [ai_v4.StatisticalGuesserHunt, ai_v3.CheckerBoardGuesser, ai_v1.RandomGuesser, ai_v2.StatisticalGuesser]
 
     # Init maps
     MAPS_AVAILABLE = 500

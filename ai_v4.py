@@ -42,9 +42,10 @@ class StatisticalGuesserHunt:
 
     def enqueue_neighbors(self, y, x, priority=10):
         s = set()
-        for yy in range(max(0, y - 1), min(y + 2, self.rows)):
-            for xx in range(max(0, x - 1), min(x + 2, self.cols)):
-                if not self.shot_board.is_one(yy, xx):
+        for (yy, xx) in [(y-1,x), (y+1,x), (y, x-1), (y, x+1)]:
+                if 0 <= yy < self.rows and \
+                    0 <= xx < self.cols and \
+                        not self.shot_board.is_one(yy, xx):
                     self.enqueue_one(yy, xx, priority)
 
     def analyze(self):
