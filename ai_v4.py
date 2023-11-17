@@ -98,7 +98,8 @@ class StatisticalGuesserHunt:
         def try_set_miss(y,x):
             if 0 <= y < self.rows:
                 if 0 <= x < self.cols:
-                    self.miss_board.set_cell(y,x,1)
+                    if not self.hit_board.is_one(y,x):
+                        self.miss_board.set_cell(y,x,1)
 
         def is_miss(y,x):
             if 0 <= y < self.rows:
@@ -160,12 +161,19 @@ class StatisticalGuesserHunt:
                         try_set_miss(y + 1, x + 5)
 
                         av = [(y-1,x+1),(y-1,x+3),(y+1,x+1),(y+1,x+3)]
+                        wings_hit = 0
                         for ty, tx in av:
                             if is_miss(ty,tx):
                                 for tty, ttx in av:
                                     try_set_miss(tty, ttx)
+
                             if is_hit(ty, tx):
-                                pass #todo
+                                wings_hit+=1
+                                for xxx in [-1,0,1]:
+                                    for yyy in [-1,0,1]:
+                                        try_set_miss(ty+yyy, tx+xxx)
+                            else:
+                                all_hit = False
 
 
                     expands, res2 = try_expand(y, x, horizontal=False)
@@ -187,12 +195,17 @@ class StatisticalGuesserHunt:
                         try_set_miss(y + 5, x + 1)
 
                         av = [(y + 1, x - 1), (y + 3, x - 1), (y + 1, x + 1), (y + 3, x + 1)]
+                        wings_hit = 0
                         for ty, tx in av:
                             if is_miss(ty, tx):
                                 for tty, ttx in av:
                                     try_set_miss(tty, ttx)
+
                             if is_hit(ty, tx):
-                                pass  # todo
+                                wings_hit+=1
+                                for xxx in [-1, 0, 1]:
+                                    for yyy in [-1, 0, 1]:
+                                        try_set_miss(ty + yyy, tx + xxx)
 
                     lines.append(res1)
                     lines.append(res2)
