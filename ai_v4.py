@@ -6,7 +6,7 @@ from boards import ZeroOneBoard, CountBoard
 from ship import ShipShapeType
 
 
-class CheckerBoardGuesser:
+class StatisticalGuesserHunt:
 
     def __init__(self, ask_fn, gamedef):
         self.rows = gamedef.rows
@@ -18,10 +18,6 @@ class CheckerBoardGuesser:
 
         self.shots = []
         self.queue = []
-        for y in range(self.rows):
-            for x in range(self.cols):
-                if y % 2 != x % 2:
-                    self.enqueue_one(y, x, priority=10)
 
         self.hits = 0
         self.shot_board = ZeroOneBoard(self.rows, self.cols)
@@ -45,11 +41,11 @@ class CheckerBoardGuesser:
         return None, None
 
     def enqueue_neighbors(self, y, x, priority=10):
-        for (yy, xx) in [(y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)]:
-            if 0 <= yy < self.rows and \
-                    0 <= xx < self.cols \
-                    and not self.shot_board.is_one(yy, xx):
-                self.enqueue_one(yy, xx, priority)
+        s = set()
+        for yy in range(max(0, y - 1), min(y + 2, self.rows)):
+            for xx in range(max(0, x - 1), min(x + 2, self.cols)):
+                if not self.shot_board.is_one(yy, xx):
+                    self.enqueue_one(yy, xx, priority)
 
     def analyze(self):
         count_board = CountBoard(self.rows, self.cols)

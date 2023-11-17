@@ -16,11 +16,14 @@ class Fleet:
             return {
                 'name': variants[0].name,
                 'size': variants[0].pieces(),
+                'priority': o['priority'],
                 'variants': variants
             }
 
         for ship in obj:
             self.ships.append(parse_ship_definition(ship))
+        self.ships = sorted(self.ships, key=lambda x: x["priority"])
+        print(self.ships)
 
     def hits_needed(self):
         return sum([ship['size'] for ship in self.ships])
