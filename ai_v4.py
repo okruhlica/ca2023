@@ -44,14 +44,6 @@ class StatisticalGuesserHunt:
         self.queue = []
         self.sunk_ships = set()
 
-    # def enqueue_neighbors(self, y, x, priority=10):
-    #     s = set()
-    #     for (yy, xx) in [(y-1,x), (y+1,x), (y, x-1), (y, x+1)]:
-    #             if 0 <= yy < self.rows and \
-    #                 0 <= xx < self.cols and \
-    #                     not self.shot_board.is_one(yy, xx):
-    #                 self.enqueue_one(yy, xx, priority)
-
     def avenger_sunk(self):
         return 9 in self.sunk_ships
 
@@ -119,11 +111,11 @@ class StatisticalGuesserHunt:
                     return self.miss_board.is_one(y, x)
             return default
 
-        def is_hit(y, x):
+        def is_hit(y, x, default=False):
             if 0 <= y < self.rows:
                 if 0 <= x < self.cols:
                     return self.hit_board.is_one(y, x)
-            return False
+            return default
 
         def try_expand(fromy, fromx, horizontal=True, reverse=False):
             dx = 1 if horizontal else 0
@@ -138,6 +130,7 @@ class StatisticalGuesserHunt:
             can_expand = False
 
             while 0 <= xx < self.cols and 0 <= yy < self.rows and not self.miss_board.is_one(yy, xx):
+                used[yy,xx] = 1.0
                 if self.hit_board.is_one(yy, xx):
                     continues += 1
                 elif nextx is None:
@@ -150,6 +143,9 @@ class StatisticalGuesserHunt:
             return can_expand, (continues, steps, nexty, nextx)
 
         def find_AC(y,x):
+            if 5 in self.sunk_ships and 9 in self.sunk_ships:
+                return
+
             if not self.hit_board.is_one(y, x):
                 return False
 
@@ -160,18 +156,6 @@ class StatisticalGuesserHunt:
                 mark_misses = [(0,-1), (0,5), (-1,-1), (-1,0), (-1,2), (-1,4), (-1,5), (1,-1), (1,0,),(1,2), (1,4),(1,5)]
                 for mark_y, mark_x in mark_misses:
                     try_set_miss(y+mark_y, x+mark_x)
-                # try_set_miss(y, x - 1)
-                # try_set_miss(y, x + 5)
-                # try_set_miss(y - 1, x - 1)
-                # try_set_miss(y - 1, x)
-                # try_set_miss(y - 1, x + 2)
-                # try_set_miss(y - 1, x + 4)
-                # try_set_miss(y - 1, x + 5)
-                # try_set_miss(y + 1, x - 1)
-                # try_set_miss(y + 1, x)
-                # try_set_miss(y + 1, x + 2)
-                # try_set_miss(y + 1, x + 4)
-                # try_set_miss(y + 1, x + 5)
 
                 wing_positions = [(y - 1, x + 1), (y - 1, x + 3),
                                   (y + 1, x + 1), (y + 1, x + 3)] # Possible positions of wings
@@ -207,17 +191,6 @@ class StatisticalGuesserHunt:
                                (1, 4), (1, 5)]
                 for mark_x, mark_y in mark_misses:
                     try_set_miss(y + mark_y, x + mark_x)
-                try_set_miss(y - 1, x)
-                try_set_miss(y + 5, x)
-                try_set_miss(y - 1, x - 1)
-                try_set_miss(y, x - 1)
-                try_set_miss(y, x + 1)
-                try_set_miss(y + 2, x - 1)
-                try_set_miss(y + 2, x + 1)
-                try_set_miss(y + 4, x - 1)
-                try_set_miss(y + 4, x + 1)
-                try_set_miss(y + 5, x - 1)
-                try_set_miss(y + 5, x + 1)
 
                 wing_positions = [(y + 1, x - 1), (y + 3, x - 1), (y + 1, x + 1), (y + 3, x + 1)]
                 wings_hit = 0
@@ -245,39 +218,49 @@ class StatisticalGuesserHunt:
                     self.sunk_ships.add(9)
 
         def find_4(y, x):
+            if 4 in self.sunk_ships:
+                return
+
             can_expand, res = try_expand(y, x, True, False)
             continues, steps, nexty, nextx = res
 
+            if is_hit(y, x-1, True):
+                return
+
             if steps == 3:
                 both_sides_blocked = is_miss(y, x - 1, True) and is_miss(y, x + 4, True)
-                larger_ships_sunk = 9 in self.sunk_ships and 5 in self.sunk_ships
+                larger_ships_sunk = 9 in self.sunk_ships # and 5 in self.sunk_ships
 
                 if nextx is not None and nextx <= x + 3:
                     self.enqueue_one(y, nextx, -4)
+                    return
 
                 if larger_ships_sunk or both_sides_blocked: # This is surely a ship
-                    for dy in [-1,1]:
+                    for dy in [-1, 1]:
                         for dx in [-1, 0, 1, 2, 3, 4]:
-                            try_set_miss(y+dy, x+dx)
+                            if is_hit(y+dy,x+dx, False):
+                                continue
+                            else:
+                                try_set_miss(y+dy, x+dx)
                     self.sunk_ships.add(4)
                     return
 
             can_expand, res = try_expand(y, x, False, False)
             continues, steps, nexty, nextx = res
-
-            if steps == 3:
-                both_sides_blocked = is_miss(y - 1, x, True) and is_miss(y+4, x, True)
-                larger_ships_sunk = 9 in self.sunk_ships and 5 in self.sunk_ships
-
-                if nexty is not None and nexty <= y + 3:
-                    self.enqueue_one(nextx, nexty, -4)
-
-                if larger_ships_sunk or both_sides_blocked:  # This is surely a ship
-                    for dy in [-1, 0, 1, 2, 3, 4]:
-                        for dx in [-1, 1]:
-                            try_set_miss(y + dy, x + dx)
-                    self.sunk_ships.add(4)
-                    return
+            #
+            # if steps == 3:
+            #     both_sides_blocked = is_miss(y - 1, x, True) and is_miss(y+4, x, True)
+            #     larger_ships_sunk = 9 in self.sunk_ships and 5 in self.sunk_ships
+            #
+            #     if nexty is not None and nexty <= y + 3:
+            #         self.enqueue_one(nextx, nexty, -4)
+            #
+            #     if larger_ships_sunk or both_sides_blocked:  # This is surely a ship
+            #         for dy in [-1, 0, 1, 2, 3, 4]:
+            #             for dx in [-1, 1]:
+            #                 try_set_miss(y + dy, x + dx)
+            #         self.sunk_ships.add(4)
+            #         return
 
         def find_3(y, x):
             can_expand, res = try_expand(y, x, True, False)
@@ -349,17 +332,19 @@ class StatisticalGuesserHunt:
 
 
         self.reset_queue()
+        used = np.zeros((self.rows, self.cols))
 
         # Prio 1: Detect obvious ships and potentially enqueue finishing steps
-        for fn in [find_AC]:#, find_4]: #, find_3, find_2]:
+        for fn in [find_AC, find_4]:
             for y in range(self.rows):
                 for x in range(self.cols):
-                    if self.hit_board.is_one(y, x):
+                    if self.hit_board.is_one(y, x) and used[y,x] == 0:
                         fn(y, x)
 
         # Prio 2: Detect unfinished lines in 4 directions and enqueue
         for y in range(self.rows):
             for x in range(self.cols):
+
                 if not self.hit_board.is_one(y, x):
                     continue
                 enqueue = (None, None)
