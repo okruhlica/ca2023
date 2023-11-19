@@ -362,13 +362,20 @@ class StatisticalGuesserHunt:
             for x in range(self.cols):
                 if not self.hit_board.is_one(y, x):
                     continue
-
+                enqueue = (None, None)
                 for horiz in [False, True]:
                     for reverse in [False, True]:
                         expands, res = try_expand(y, x, horizontal=horiz, reverse=reverse)
                         if expands:
                             continues, steps, nexty, nextx = res
-                            self.enqueue_one(nexty, nextx, 0)
+                            if 9 in self.sunk_ships:
+                                if continues > 0:
+                                    enqueue = (nexty, nextx)
+
+                            if enqueue == (None, None):
+                                enqueue = (nexty, nextx)
+                        if enqueue != (None, None):
+                            self.enqueue_one(enqueue[0], enqueue[1], 0)
         # print(self.queue)
     def move(self):
         self.moves+=1
