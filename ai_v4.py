@@ -250,7 +250,7 @@ class StatisticalGuesserHunt:
 
             if steps == 3:
                 both_sides_blocked = is_miss(y - 1, x, True) and is_miss(y+4, x, True)
-                larger_ships_sunk = 9 in self.sunk_ships #and 5 in self.sunk_ships
+                larger_ships_sunk = 9 in self.sunk_ships
 
                 if nexty is not None and nexty <= y + 3:
                     self.enqueue_one(nexty, x, -4)
@@ -267,79 +267,86 @@ class StatisticalGuesserHunt:
                     return
 
         def find_3(y, x):
+            if 3 in self.sunk_ships:
+                return
+
             can_expand, res = try_expand(y, x, True, False)
             continues, steps, nexty, nextx = res
 
+            if is_hit(y, x-1, True) or is_hit(y-1, x, True):
+                return
+
             if steps == 2:
                 both_sides_blocked = is_miss(y, x - 1, True) and is_miss(y, x + 3, True)
-                larger_ships_sunk = 9 in self.sunk_ships and 5 in self.sunk_ships and 4 in self.sunk_ships #todo there's one more case to consider
+                larger_ships_sunk = 9 in self.sunk_ships # and 5 in self.sunk_ships
 
                 if nextx is not None and nextx <= x + 2:
-                    self.enqueue_one(nexty, nextx, -3)
+                    self.enqueue_one(y, nextx, -3)
+                    return
 
-                if larger_ships_sunk or both_sides_blocked:  # This is surely a 3 ship
+                if larger_ships_sunk or both_sides_blocked: # This is surely a ship
                     for dy in [-1, 1]:
                         for dx in [-1, 0, 1, 2, 3]:
-                            try_set_miss(y + dy, x + dx)
+                            if is_hit(y+dy,x+dx, False):
+                                continue
+                            else:
+                                try_set_miss(y+dy, x+dx)
                     self.sunk_ships.add(3)
                     return
 
             can_expand, res = try_expand(y, x, False, False)
             continues, steps, nexty, nextx = res
 
-            if steps == 2:
-                both_sides_blocked = is_miss(y - 1, x, True) and is_miss(y + 3, x, True)
-                larger_ships_sunk = 9 in self.sunk_ships and 5 in self.sunk_ships and 4 in self.sunk_ships
-
-                if nexty is not None and nexty <= y + 2:
-                    self.enqueue_one(nexty, nextx, -3)
-
-                if larger_ships_sunk or both_sides_blocked:  # This is surely a 3 ship
-                    for dx in [-1, 1]:
-                        for dy in [-1, 0, 1, 2, 3]:
-                            try_set_miss(y + dy, x + dx)
-                    self.sunk_ships.add(3)
-                    return
+            # if steps == 2:
+            #     both_sides_blocked = is_miss(y - 1, x, True) and is_miss(y+3, x, True)
+            #     larger_ships_sunk = 4 in self.sunk_ships
+            #
+            #     if nexty is not None and nexty <= y + 2:
+            #         self.enqueue_one(nexty, x, -3)
+            #         return
+            #
+            #     if larger_ships_sunk and both_sides_blocked:  # This is surely a ship
+            #         for dy in [-1, 0, 1, 2, 3]:
+            #             for dx in [-1, 1]:
+            #                 if is_hit(y+dy, x+dx, False):
+            #                     continue
+            #                 else:
+            #                      try_set_miss(y + dy, x + dx)
+            #         self.sunk_ships.add(3)
+            #         return
 
         def find_2(y, x):
+            if 2 in self.sunk_ships:
+                return
+
             can_expand, res = try_expand(y, x, True, False)
             continues, steps, nexty, nextx = res
+
+            if is_hit(y, x - 1, True) or is_hit(y - 1, x, True):
+                return
 
             if steps == 1:
                 both_sides_blocked = is_miss(y, x - 1, True) and is_miss(y, x + 2, True)
 
                 if nextx is not None and nextx <= x + 1:
-                    self.enqueue_one(nexty, nextx, -2)
+                    self.enqueue_one(y, nextx, -2)
+                    return
 
-                if both_sides_blocked:  # This is surely a 3 ship
+                if both_sides_blocked:  # This is surely a ship
                     for dy in [-1, 1]:
                         for dx in [-1, 0, 1, 2]:
-                            try_set_miss(y + dy, x + dx)
+                            if is_hit(y + dy, x + dx, False):
+                                continue
+                            else:
+                                try_set_miss(y + dy, x + dx)
                     self.sunk_ships.add(2)
                     return
-
-            can_expand, res = try_expand(y, x, False, False)
-            continues, steps, nexty, nextx = res
-
-            if steps == 1:
-                both_sides_blocked = is_miss(y - 1, x, True) and is_miss(y + 2, x, True)
-
-                if nexty is not None and nexty <= y + 1:
-                    self.enqueue_one(nexty, nextx, -2)
-
-                if both_sides_blocked:  # This is surely a 3 ship
-                    for dx in [-1, 1]:
-                        for dy in [-1, 0, 1, 2]:
-                            try_set_miss(y + dy, x + dx)
-                    self.sunk_ships.add(2)
-                    return
-
 
         self.reset_queue()
         used = np.zeros((self.rows, self.cols))
 
         # Prio 1: Detect obvious ships and potentially enqueue finishing steps
-        for fn in [find_AC, find_4]:
+        for fn in [find_AC, find_4, find_2]:
             for y in range(self.rows):
                 for x in range(self.cols):
                     if self.hit_board.is_one(y, x) and used[y,x] == 0:
