@@ -224,7 +224,7 @@ class StatisticalGuesserHunt:
             can_expand, res = try_expand(y, x, True, False)
             continues, steps, nexty, nextx = res
 
-            if is_hit(y, x-1, True):
+            if is_hit(y, x-1, True) or is_hit(y-1, x, True):
                 return
 
             if steps == 3:
@@ -247,20 +247,24 @@ class StatisticalGuesserHunt:
 
             can_expand, res = try_expand(y, x, False, False)
             continues, steps, nexty, nextx = res
-            #
-            # if steps == 3:
-            #     both_sides_blocked = is_miss(y - 1, x, True) and is_miss(y+4, x, True)
-            #     larger_ships_sunk = 9 in self.sunk_ships and 5 in self.sunk_ships
-            #
-            #     if nexty is not None and nexty <= y + 3:
-            #         self.enqueue_one(nextx, nexty, -4)
-            #
-            #     if larger_ships_sunk or both_sides_blocked:  # This is surely a ship
-            #         for dy in [-1, 0, 1, 2, 3, 4]:
-            #             for dx in [-1, 1]:
-            #                 try_set_miss(y + dy, x + dx)
-            #         self.sunk_ships.add(4)
-            #         return
+
+            if steps == 3:
+                both_sides_blocked = is_miss(y - 1, x, True) and is_miss(y+4, x, True)
+                larger_ships_sunk = 9 in self.sunk_ships #and 5 in self.sunk_ships
+
+                if nexty is not None and nexty <= y + 3:
+                    self.enqueue_one(nexty, x, -4)
+                    return
+
+                if larger_ships_sunk and both_sides_blocked:  # This is surely a ship
+                    for dy in [-1, 0, 1, 2, 3, 4]:
+                        for dx in [-1, 1]:
+                            if is_hit(y+dy, x+dx, False):
+                                continue
+                            else:
+                                 try_set_miss(y + dy, x + dx)
+                    self.sunk_ships.add(4)
+                    return
 
         def find_3(y, x):
             can_expand, res = try_expand(y, x, True, False)
